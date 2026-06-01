@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Platform Game</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0d14;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      box-shadow: 0 0 60px rgba(80, 120, 200, 0.25), 0 0 0 2px rgba(255,255,255,0.06);
+      border-radius: 4px;
+    }
+
+    #game-container canvas {
+      display: block;
+      border-radius: 4px;
+    }
+
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: #0d0d14;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      border-radius: 4px;
+      z-index: 100;
+    }
+
+    #loading-overlay.hidden { display: none; }
+
+    .loading-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #e0e8ff;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+    }
+
+    .loading-bar-bg {
+      width: 320px;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .loading-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4a90d9, #7eb8f7);
+      border-radius: 3px;
+      transition: width 0.1s ease;
+    }
+
+    .loading-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="loading-overlay">
+      <div class="loading-title">Platform Game</div>
+      <div class="loading-bar-bg">
+        <div class="loading-bar-fill" id="js-bar"></div>
+      </div>
+      <div class="loading-text" id="js-loading-text">INITIALISATION...</div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
