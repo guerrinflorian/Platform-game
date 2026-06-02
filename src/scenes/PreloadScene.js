@@ -6,7 +6,7 @@ const ANIM_DEFS = [
   { key: 'walk',          dirs: ['right','left','up','down'], frames: 9,  fps: 9,  repeat: -1 },
   { key: 'run',           dirs: ['right','left','up','down'], frames: 8,  fps: 14, repeat: -1 },
   { key: 'jump',          dirs: ['right','left','up','down'], frames: 5,  fps: 10, repeat: 0  },
-  { key: 'halfslash_128', dirs: ['right','left','up','down'], frames: 6,  fps: 16, repeat: 0  },
+  { key: 'halfslash_128', dirs: ['right','left','down'],      frames: 6,  fps: 16, repeat: 0  },
   { key: 'hurt',          dirs: ['up'],                        frames: 6,  fps: 10, repeat: 0  },
   { key: 'combat',        dirs: ['right','left','up','down'], frames: 2,  fps: 4,  repeat: -1 },
 ]

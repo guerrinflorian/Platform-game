@@ -10,30 +10,15 @@ const JUMP_BUF_MS  = 150
 const INV_MS       = 1400
 const ATK_COOLDOWN = 420
 
-// ─── Attack visual offsets (pixel-analysed) ───────────────────────────────────
-// halfslash_128 is 128×128 (192×192 at 1.5×). Fixed origin (0.5, 0.9375) places
-// the anchor at (96, 180) in the 192px frame.
-// Reference idle position: idle char at (28px, 61px) in 64px sprite
-//   → display (42, 91.5) → world char at (phys.x-6, phys.y+40.5)
-//
-// Measured character body in halfslash sprites (PIL pixel analysis):
-//   right avg body_cx=49.7/128 (f1=42, f3-6≈53), feet_y=93/128 → Δx=16, Δy=42
-//   left  avg body_cx=77.3/128 (f1=85, f3-6≈73), feet_y=93/128 → Δx=-26, Δy=42
-//   up    avg body_cx≈49/128,   feet_y≈90/128               → Δx=17, Δy=46
-//
-// Δy=42 is the critical fix: previously wrong at -3 → caused 45px upward shift.
 const ATK_VISUAL_OFFSET = {
   right: { x:  16, y: 42 },
   left:  { x: -26, y: 42 },
-  up:    { x:  17, y: 46 },
   down:  { x:   0, y: 42 },
 }
 
-// ─── Attack hitbox offsets from body center ───────────────────────────────────
 const ATK_OFFSETS = {
   right: { x:  60, y: -10, w: 90, h: 55 },
   left:  { x: -60, y: -10, w: 90, h: 55 },
-  up:    { x:   0, y: -70, w: 70, h: 80 },
   down:  { x:   0, y:  50, w: 70, h: 60 },
 }
 
@@ -103,8 +88,6 @@ export class Player {
     const moveR  = keys.d.isDown || keys.arrowRight.isDown
     const sprint = keys.shift.isDown
 
-    // Z/S = direction d'attaque verticale (pas pour sauter)
-    const aimUp   = keys.z.isDown
     const aimDown = keys.s.isDown
 
     // Saut : ESPACE ou flèche haut uniquement
@@ -152,7 +135,7 @@ export class Player {
 
     // Attack — direction : Z=haut, S=bas, sinon côté regardé
     if (atkJust && this._atkCool <= 0) {
-      const dir = aimUp ? 'up' : aimDown ? 'down' : this.facing
+      const dir = aimDown ? 'down' : this.facing
       this._startAttack(dir)
       this._syncVisual(); return
     }
@@ -174,16 +157,8 @@ export class Player {
 
     // En l'air : comportement selon direction d'attaque
     if (this._atkDir === 'down') {
-      // Plongeon vertical (meteor slam) : gravité renforcée + pas de frein X
-      this.phys.body.setGravityY(1400)  // tombe vite
-    } else if (this._atkDir === 'up') {
-      // Attaque vers le haut : mini-élévation + gravité très faible (hang)
-      this.phys.body.setGravityY(-700)  // quasi flottant
-      // Léger drift horizontal autorisé
-      const moveL = keys.q.isDown || keys.arrowLeft.isDown
-      const moveR = keys.d.isDown || keys.arrowRight.isDown
-      if (moveL)      this.phys.body.setVelocityX(-WALK_SPEED * 0.5)
-      else if (moveR) this.phys.body.setVelocityX( WALK_SPEED * 0.5)
+      // Plongeon vertical (meteor slam) : gravité renforcée
+      this.phys.body.setGravityY(1400)
     } else {
       // Attaque côté : "hang" seulement au pic ou en descente
       // (si on monte encore, gravité normale pour ne pas prolonger le saut)
@@ -265,12 +240,70 @@ export class Player {
   }
 
   _endAttack() {
+    this._spawnHitParticles()
     this.state      = 'idle'
     this._atkInAir  = false
     this.atkBox.body.enable = false
-    // Réinitialise la gravité custom de l'attaque
     this.phys.body.setGravityY(0)
     this._updateStateAnim(false, false)
+  }
+
+  // ── Sword-tip burst à la fin de chaque slash ──────────────────────────────
+  _spawnHitParticles() {
+    const dir = this._atkDir
+
+    // Pointe de l'épée = bord externe de la hitbox
+    const TIP = {
+      right: { x: this.phys.x + 105, y: this.phys.y - 10 },
+      left:  { x: this.phys.x - 105, y: this.phys.y - 10 },
+      down:  { x: this.phys.x,        y: this.phys.y + 80  },
+    }
+    const SPRAY = {
+      right: { min: -55, max: 55  },
+      left:  { min: 125, max: 235 },
+      down:  { min: 35,  max: 145 },
+    }
+
+    const pos = TIP[dir]
+    const ang = SPRAY[dir]
+
+    // Flash blanc au bout de la lame
+    const flash = this.scene.add.circle(pos.x, pos.y, 14, 0xffffff, 0.95)
+      .setDepth(35)
+    this.scene.tweens.add({
+      targets:  flash,
+      scaleX:   3, scaleY: 3,
+      alpha:    0,
+      duration: 160,
+      ease:     'Power2',
+      onComplete: () => flash.destroy(),
+    })
+
+    // Éclats de sparks
+    const emitter = this.scene.add.particles(pos.x, pos.y, 'pixel', {
+      speed:    { min: 70, max: 280 },
+      angle:    ang,
+      scale:    { start: 3.2, end: 0 },
+      lifespan: { min: 200, max: 480 },
+      tint:     [0xffffff, 0xfff3a0, 0xffcc33, 0xff8800, 0x88ddff],
+      gravityY: 520,
+      emitting: false,
+    }).setDepth(30)
+    emitter.explode(18)
+
+    // Quelques traînées fines (longues, rapides)
+    const trails = this.scene.add.particles(pos.x, pos.y, 'pixel', {
+      speed:    { min: 160, max: 380 },
+      angle:    ang,
+      scale:    { start: 1.5, end: 0 },
+      lifespan: { min: 120, max: 260 },
+      tint:     [0xffffff, 0xffe0a0],
+      gravityY: 200,
+      emitting: false,
+    }).setDepth(31)
+    trails.explode(10)
+
+    this.scene.time.delayedCall(700, () => { emitter.destroy(); trails.destroy() })
   }
 
   _updateAtkBox() {

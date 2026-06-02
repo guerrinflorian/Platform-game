@@ -53,7 +53,7 @@ export class HUDScene extends Phaser.Scene {
     const lines = [
       { key: 'Q / D',        label: 'Déplacer'    },
       { key: 'SPC / ↑',      label: 'Sauter'      },
-      { key: 'CLIC + Z/S',   label: 'Atk ↑ / ↓'  },
+      { key: 'CLIC + S',     label: 'Atk ↓'       },
       { key: 'SHIFT',        label: 'Courir'      },
     ]
 
